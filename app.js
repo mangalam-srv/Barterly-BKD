@@ -7,6 +7,10 @@ app.use(express.json());
 
 //import routes
 import userRouter from "./routes/user.routes.js"
-app.use("/api",userRouter );
+app.use("/api/v1/users", userRouter);
+
+
+import itemRouter from "./routes/item.routes.js"
+app.use("/api/v1/items", itemRouter);
 
 export default app;

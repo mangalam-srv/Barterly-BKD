@@ -12,17 +12,17 @@ console.log("email",email);
 
 
 //anything should not be empty
-if(name=="" || email=="" || password=="" || googleId==""){
+if(!name || !email || !password || !googleId){
     throw new ApiError(400,"fields are mandatory");
 }
 //check if the email and googleid contains @
-if(!email.contains("@") || !googleId.contains("@")){
+if(!email.includes("@") || !googleId.includes("@")){
     throw new ApiError(400,"invalid mail");
 }
 
 
 //check if the username or email already exists
-const existeduser = User.findone({
+const existeduser = await User.findOne({
     $or:[{name},{email}]//this or helps that we can get as many as values
 })
 if(existeduser){
@@ -31,7 +31,7 @@ if(existeduser){
 
 
 //create the user
-const user = User.create({
+const user = await User.create({
     name,
     email,
     password,
@@ -40,9 +40,8 @@ const user = User.create({
 
 
 //remove the password
-const createduser = await User.findById(user._id).select(
-    "-password"
-)
+const createduser = await User.findById(user._id).select("-password");
+
 
 
 //check if the user is created
@@ -53,7 +52,7 @@ if(!createduser){
 
 //return the user
 return res.status(201).json(
-    new ApiResponse(200,"user registered successfully"),
+    new ApiResponse(200,createduser,"user registered successfully"),
 )
 
 
