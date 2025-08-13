@@ -12,7 +12,7 @@ console.log("email",email);
 
 
 //anything should not be empty
-if(!name || !email || !password || !googleId){
+if(name=="" || email=="" || password=="" || googleId==""){
     throw new ApiError(400,"fields are mandatory");
 }
 //check if the email and googleid contains @
