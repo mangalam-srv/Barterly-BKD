@@ -1,6 +1,6 @@
 import {Router} from  "express";
-import { createitem } from "../controllers/item.controller";
-import { protect } from "../middlewares/auth.middleware.js";
+import { createitem } from "../controllers/item.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
 import{upload} from "../middleware/multer.middleware.js"
 
 const router = Router();
