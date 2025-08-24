@@ -6,6 +6,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+import aiRoutes from "./routes/ai.routes.js";
+
+app.use("/api/ai", aiRoutes);
 
 
 //import routes

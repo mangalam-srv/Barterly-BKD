@@ -1,69 +1,98 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import User from "../models/user.models.js"
+import User from "../models/user.models.js";
+import jwt from "jsonwebtoken";
 
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+};
 
-const registerUser = asyncHandler(async(req,res)=>{
-
-     if (!req.body) {
+// REGISTER USER
+const registerUser = asyncHandler(async (req, res) => {
+  if (!req.body) {
     throw new ApiError(400, "Request body is missing");
   }
 
-//get user details from the frontend 
-const {name,email,password,googleId }= req.body;
-console.log("email",email);
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    throw new ApiError(400, "All fields are mandatory");
+  }
+
+  if (!email.includes("@")) {
+    throw new ApiError(400, "Invalid email");
+  }
+
+  // Check if user exists
+  const existedUser = await User.findOne({ email });
+  if (existedUser) {
+    throw new ApiError(409, "User already exists");
+  }
+
+  // Create user
+  const user = await User.create({ name, email, password });
+
+  const createdUser = await User.findById(user._id).select("-password");
+  if (!createdUser) {
+    throw new ApiError(500, "Server issue while creating the user");
+  }
+
+  const token = generateToken(user._id);
+
+  return res.status(201).json(
+    new ApiResponse(
+      200,
+      { user: createdUser, token },
+      "User registered successfully"
+    )
+  );
+});
+
+// LOGIN USER
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  const token = generateToken(user._id);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { user: { id: user._id, name: user.name, email: user.email }, token },
+      "Login successful"
+    )
+  );
+});
 
 
-//anything should not be empty
-if(!name || !email || !password || !googleId){
-    throw new ApiError(400,"fields are mandatory");
-}
-//check if the email and googleid contains @
-if(!email.includes("@") || !googleId.includes("@")){
-    throw new ApiError(400,"invalid mail");
-}
 
 
-//check if the username or email already exists
-const existeduser = await User.findOne({
-    $or:[{name},{email}]//this or helps that we can get as many as values
-})
-if(existeduser){
-    throw new ApiError(409,"user already exist");
-}
+// LOGOUT USER
+const logoutUser = asyncHandler(async (req, res) => {
+  // If you're storing the token in cookies
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // true in production
+    sameSite: "strict",
+  });
 
+  return res.status(200).json(
+    new ApiResponse(200, null, "User logged out successfully")
+  );
+});
 
-//create the user
-const user = await User.create({
-    name,
-    email,
-    password,
-    googleId,
-})
-
-
-//remove the password
-const createduser = await User.findById(user._id).select("-password");
-
-
-
-//check if the user is created
-if(!createduser){
-    throw new ApiError(500,"server issue while creating the user")
-}
-
-
-//return the user
-return res.status(201).json(
-    new ApiResponse(200,createduser,"user registered successfully"),
-)
-
-
-
-
-
-})
-
-export{registerUser};
-
+export { registerUser, loginUser ,logoutUser};

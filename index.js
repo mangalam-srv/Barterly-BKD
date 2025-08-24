@@ -1,4 +1,7 @@
 import dotenv from "dotenv"
+dotenv.config({
+    path:'./.env'
+},{ override: true })//this does the work of importing the variabbles declared in the .envfile 
 import  app  from "./app.js";
 
 
@@ -6,10 +9,8 @@ import express from "express";
 import connectDB from "./db/index.js";
 
 
-dotenv.config({
-    path:'./.env'
-})//this does the work of importing the variabbles declared in the .envfile 
 
+console.log(process.env.MONGODB_URI);
 
 connectDB()
 .then(()=>{

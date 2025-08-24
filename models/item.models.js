@@ -23,10 +23,12 @@ const itemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    image: {
-      type: String, // URL or file path
-      required: true,
-    },
+      image: {
+    type: String, // Single image URL
+    required: true
+},
+
+
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
