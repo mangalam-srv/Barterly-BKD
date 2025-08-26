@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv"
+dotenv.config();
 
 console.log("Gemini API Key:", process.env.GEMINI_API_KEY ? "Loaded" : "Not Loaded");
+
 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -14,7 +17,8 @@ export const generateListing = async (req, res) => {
       return res.status(400).json({ message: "Please provide title or description" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+
 
     const prompt = `
       You are an assistant for a barter platform.
