@@ -7,11 +7,11 @@ import { uploadoncloudinary } from "../utils/cloudinary.js";
 // CREATE ITEM
 const createitem = asyncHandler(async (req, res) => {
     try {
-        const { title, description, listingType, location, ownerId } = req.body;
+        const { title, description, listingType, location } = req.body;
 
         // Validate required fields
-        if (!title || !description || !listingType || !location || !ownerId) {
-            throw new ApiError(400, "Title, description, listing type, location, and ownerId are required");
+        if (!title || !description || !listingType || !location) {
+            throw new ApiError(400, "Title, description, listing type, and location are required");
         }
 
         // Validate image
@@ -34,7 +34,7 @@ const createitem = asyncHandler(async (req, res) => {
             listingType,
             location,
             image: image.url,
-            owner: ownerId, // Use ownerId from body
+            owner: req.user._id, // ✅ take owner from logged-in user
         });
 
         return res.status(201).json(
@@ -54,13 +54,9 @@ const createitem = asyncHandler(async (req, res) => {
 // DELETE ITEM
 const deleteItem = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { ownerId } = req.body; // Use ownerId from body
 
     if (!id) {
         throw new ApiError(400, "Item ID is required");
-    }
-    if (!ownerId) {
-        throw new ApiError(400, "Owner ID is required for authorization");
     }
 
     const item = await Item.findById(id);
@@ -69,7 +65,7 @@ const deleteItem = asyncHandler(async (req, res) => {
     }
 
     // Check authorization
-    if (item.owner.toString() !== ownerId) {
+    if (item.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You are not authorized to delete this item");
     }
 

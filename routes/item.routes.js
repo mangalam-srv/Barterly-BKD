@@ -5,7 +5,7 @@ import{upload} from "../middleware/multer.middleware.js"
 
 const router = Router();
 router.post( "/listitem",
-    // protect, // only logged-in users 
+    protect, // only logged-in users 
     upload.fields([{ name: "image", maxCount: 1 }]),
     createitem
 );
