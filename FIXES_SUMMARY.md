@@ -316,7 +316,8 @@ This document outlines all the fixes and improvements made to the Barterly backe
 PORT=4000
 NODE_ENV=development
 
-MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/
+MONGODB_URI=your_mongodb_connection_string
+
 JWT_SECRET=your-secure-secret
 JWT_EXPIRES=7d
 
