@@ -1,11 +1,19 @@
+import dns from "dns";
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 import dotenv from "dotenv";
+dotenv.config({
+  path: "./.env",
+  override: true,
+  quiet: true,
+});
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";  // ✅ native ws
 import connectDB from "./db/index.js";
 import app from "./app.js";
 
-dotenv.config({ path: './.env' }, { override: true });
 
 const PORT = process.env.PORT || 4000;
 
@@ -15,6 +23,7 @@ const server = http.createServer(app);
 // Setup WebSocket server
 const wss = new WebSocketServer({ server });
 
+dns.setDefaultResultOrder("ipv4first");
 // When a client connects
 wss.on("connection", (ws) => {
   console.log("✅ A client connected");

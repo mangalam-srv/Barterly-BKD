@@ -1,12 +1,21 @@
-// routes/item.routes.js
 import { Router } from "express";
-import { createitem, deleteItem } from "../controllers/item.controller.js";
-import { protect } from "../middleware/auth.middleware.js";  // ✅ correct path
+import {
+  createitem,
+  deleteItem,
+  getAllItems,
+  getMyItems,
+  getSingleItem,
+  updateItem,
+} from "../controllers/item.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
 
 const router = Router();
 
-// Create item (protected, needs login)
+router.get("/", getAllItems);
+router.get("/my-items", protect, getMyItems);
+router.get("/:id", getSingleItem);
+
 router.post(
   "/listitem",
   protect,
@@ -14,7 +23,13 @@ router.post(
   createitem
 );
 
-// Delete item (protected, only owner can delete)
+router.put(
+  "/:id",
+  protect,
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  updateItem
+);
+
 router.delete("/:id", protect, deleteItem);
 
 export default router;

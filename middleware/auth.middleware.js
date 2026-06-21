@@ -5,8 +5,19 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import User from "../models/user.models.js";
 
 export const protect = asyncHandler(async (req, res, next) => {
+  console.log("========== REQUEST ==========");
+  console.log("METHOD:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("AUTH HEADER:", req.headers.authorization);
+  console.log("USER-AGENT:", req.headers["user-agent"]);
+  console.log("REFERER:", req.headers.referer);
+  console.log("============================");
+
   const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
 
   if (!token) {
     throw new ApiError(401, "Unauthorized - No token provided");
@@ -15,7 +26,6 @@ export const protect = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ match your loginUser payload ({ id: user._id })
     const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {

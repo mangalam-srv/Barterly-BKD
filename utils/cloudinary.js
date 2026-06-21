@@ -4,7 +4,6 @@ import { log } from "console";
 import dotenv from "dotenv";
 
 
-dotenv.config();
 
 
 
@@ -15,10 +14,7 @@ cloudinary.config({
     });
 
 
-    console.log("Cloudinary loaded:", {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY ? "loaded" : "missing"
-});
+console.log("✅ Cloudinary Connected");
 
 
 
