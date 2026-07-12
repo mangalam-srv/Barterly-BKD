@@ -26,8 +26,6 @@ console.log("✅ Cloudinary Connected");
             if(!localfilepath)return null;
 
 
-            console.log("Uploading file:", localfilepath);
-            console.log("Cloudinary config:", cloudinary.config());
 
 
        
@@ -35,7 +33,7 @@ console.log("✅ Cloudinary Connected");
         //if file is provided
         const response = await cloudinary.uploader.upload(localfilepath,{resource_type:"auto"})
 
-        console.log("file is successfully uploaded",cloudinary.url);
+       
         
         return response;
         

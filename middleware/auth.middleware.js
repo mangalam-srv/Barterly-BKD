@@ -5,13 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import User from "../models/user.models.js";
 
 export const protect = asyncHandler(async (req, res, next) => {
-  console.log("========== REQUEST ==========");
-  console.log("METHOD:", req.method);
-  console.log("URL:", req.originalUrl);
-  console.log("AUTH HEADER:", req.headers.authorization);
-  console.log("USER-AGENT:", req.headers["user-agent"]);
-  console.log("REFERER:", req.headers.referer);
-  console.log("============================");
+
 
   const authHeader = req.headers.authorization || "";
 
@@ -19,22 +13,25 @@ export const protect = asyncHandler(async (req, res, next) => {
     ? authHeader.slice(7)
     : null;
 
+  
+
   if (!token) {
-    throw new ApiError(401, "Unauthorized - No token provided");
+    throw new ApiError(401, "No token");
   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select("-password");
 
-    if (!user) {
-      throw new ApiError(401, "User not found");
-    }
 
-    req.user = user;
-    next();
-  } catch (err) {
-    throw new ApiError(401, "Unauthorized - Invalid or expired token");
+  const user = await User.findById(decoded.id).select("-password");
+
+  
+
+  if (!user) {
+    throw new ApiError(401, "User not found");
   }
+
+  req.user = user;
+
+  next();
 });

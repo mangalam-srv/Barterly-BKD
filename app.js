@@ -1,44 +1,38 @@
+// import dotenv from "dotenv";
+// dotenv.config();
+import "./config/env.js";
+
 import express from "express";
 
 const app = express();
 import cors from "cors";
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-import session from "express-session";
 import passport from "passport";
-import GoogleStrategy from "passport-google-oauth20";
+import "./config/passport.js";
 
+
+app.use("/api/v1/auth", authRoutes);
+
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+app.set("trust proxy", 1);
 app.use(
-  session({
-    secret: "secret",
-    resave: false,
-    saveUninitialized: true,
+  cors({
+    origin: clientUrl,
+    credentials: true,
   })
 );
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:4000/auth/google/callback",
-    },
-    (accessToken, refreshToken, profile, done) => {
-      return done(null, profile);
-    }
-  )
-);
+
 
 app.use(passport.initialize());
-app.use(passport.session());
 
-passport.serializeUser((user, done) => done(null, user));
-
-passport.deserializeUser((user, done) => done(null, user));
 import aiRoutes from "./routes/ai.routes.js";
-
 app.use("/api/ai", aiRoutes);
+
+import chatRoutes from "./routes/chat.routes.js";
+app.use("/api/v1/chats", chatRoutes);
 
 //import routes
 import userRouter from "./routes/user.routes.js";
@@ -48,6 +42,6 @@ import itemRouter from "./routes/item.routes.js";
 app.use("/api/v1/items", itemRouter);
 
 import authRoutes from "./routes/auth.routes.js";
-app.use("/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 export default app;

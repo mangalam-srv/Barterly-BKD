@@ -1,77 +1,46 @@
 import dns from "dns";
-
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
-
 import dotenv from "dotenv";
-dotenv.config({
-  path: "./.env",
-  override: true,
-  quiet: true,
-});
+
+
 import express from "express";
 import http from "http";
-import { WebSocketServer } from "ws";  // ✅ native ws
+import { Server } from "socket.io";
 import connectDB from "./db/index.js";
 import app from "./app.js";
-
+import Conversation from "./models/conversation.models.js";
+import Message from "./models/message.models.js";
 
 const PORT = process.env.PORT || 4000;
 
 // Create HTTP server for Express + WS
 const server = http.createServer(app);
 
-// Setup WebSocket server
-const wss = new WebSocketServer({ server });
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  },
+});
 
-dns.setDefaultResultOrder("ipv4first");
-// When a client connects
-wss.on("connection", (ws) => {
-  console.log("✅ A client connected");
+io.on("connection", (socket) => {
+  
 
-  // Handle messages from client
-  ws.on("message", (msg) => {
-    try {
-      const data = JSON.parse(msg.toString());
-      console.log("📩 Received:", data);
-
-      // Handle joining a room
-      if (data.event === "join-room") {
-        ws.roomId = data.data; // save room info
-        ws.send(JSON.stringify({ 
-          event: "joined", 
-          room: data.data,
-          message: `You joined room ${data.data}` 
-        }));
-      }
-
-      // Handle sending a message
-      if (data.event === "send-message") {
-        // broadcast to all users in same room
-        wss.clients.forEach((client) => {
-          if (
-            client.readyState === 1 && 
-            client.roomId === data.data.roomId
-          ) {
-            client.send(JSON.stringify({
-              event: "receive-message",
-              roomId: data.data.roomId,
-              message: data.data.message,
-              sender: data.data.sender,
-            }));
-          }
-        });
-      }
-
-    } catch (err) {
-      console.error("❌ Invalid message", err);
-      ws.send(JSON.stringify({ event: "error", error: "Invalid JSON" }));
-    }
+  socket.on("join-room", (roomId) => {
+    socket.join(roomId);
+    
   });
 
-  ws.on("close", () => {
-    console.log("❌ Client disconnected");
+  socket.on("typing", (roomId) => {
+    socket.to(roomId).emit("typing");
+  });
+
+  socket.on("disconnect", () => {
+    
   });
 });
+
+app.set("io", io);
 
 // Start server after DB connection
 connectDB()
