@@ -1,51 +1,59 @@
 import { Router } from "express";
 import passport from "passport";
-import jwt from "jsonwebtoken";
-import User from "../models/user.models.js";
+import {
+  completeGoogleLogin,
+  getGoogleLoginFailure,
+} from "../controllers/auth.controller.js";
+import { isGoogleOAuthConfigured } from "../config/passport.js";
 
 const router = Router();
 
-// Trigger Google login
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+const googleOAuthUnavailable = (req, res) => {
+  return res.redirect(
+    `${clientUrl}/#/login?oauthError=google_oauth_not_configured`
+  );
+};
+
+// Start Google OAuth
+router.get(
+  "/google",
+  (req, res, next) => {
+
+    if (!isGoogleOAuthConfigured) {
+      console.warn("❌ Google OAuth not configured");
+      return googleOAuthUnavailable(req, res);
+    }
+
+    next();
+  },
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    prompt: "select_account",
+  })
+);
 
 // Google callback
-router.get("/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  async (req, res) => {
-    try {
-      const profile = req.user;
+router.get(
+  "/google/callback",
+  (req, res, next) => {
 
-      // Extract email & name
-      const email = profile.emails[0].value;
-      const name = profile.displayName;
-
-      // Check if user exists
-      let user = await User.findOne({ email });
-
-      if (!user) {
-        // Create new user (password not needed for Google login)
-        user = await User.create({
-          name,
-          email,
-          password: "google-oauth", // dummy password (or leave undefined if schema allows)
-        });
-      }
-
-      // Generate JWT token
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-      // Send token + user info
-      return res.json({
-        success: true,
-        user: { id: user._id, name: user.name, email: user.email },
-        token,
-      });
-
-    } catch (error) {
-      console.error(error);
-      res.redirect("/login?error=OAuthFailed");
+    if (!isGoogleOAuthConfigured) {
+      return googleOAuthUnavailable(req, res);
     }
-  }
+
+    next();
+  },
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: `${clientUrl}/#/login?oauthError=google_login_failed`,
+  }),
+  completeGoogleLogin
 );
+
+// Failure
+router.get("/google/failure", getGoogleLoginFailure);
 
 export default router;

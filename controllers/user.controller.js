@@ -2,11 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import User from "../models/user.models.js";
-import jwt from "jsonwebtoken";
-
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-};
+import { generateToken } from "../utils/jwt.js";
 
 // REGISTER USER
 const registerUser = asyncHandler(async (req, res) => {
@@ -40,13 +36,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const token = generateToken(user._id);
 
-  return res.status(201).json(
-    new ApiResponse(
-      200,
-      { user: createdUser, token },
-      "User registered successfully"
-    )
-  );
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        200,
+        { user: createdUser, token },
+        "User registered successfully"
+      )
+    );
 });
 
 // LOGIN USER
@@ -62,24 +60,32 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const isMatch = await user.comparePassword(password);
-  if (!isMatch) {
-    throw new ApiError(401, "Invalid email or password");
-  }
+if (user.provider === "google") {
+  throw new ApiError(400, "Please continue with Google.");
+}
+
+const isMatch = await user.comparePassword(password);
+
+if (!isMatch) {
+  throw new ApiError(401, "Invalid email or password");
+}
 
   const token = generateToken(user._id);
+  const safeUser = await User.findById(user._id).select("-password");
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      { user: { id: user._id, name: user.name, email: user.email }, token },
-      "Login successful"
-    )
-  );
+return res.status(200).json(
+  new ApiResponse(
+    200,
+    {
+      user: safeUser,
+      token,
+    },
+    "Login successful"
+  )
+);
+
+ 
 });
-
-
-
 
 // LOGOUT USER
 const logoutUser = asyncHandler(async (req, res) => {
@@ -90,9 +96,19 @@ const logoutUser = asyncHandler(async (req, res) => {
     sameSite: "strict",
   });
 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "User logged out successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
   return res.status(200).json(
-    new ApiResponse(200, null, "User logged out successfully")
+    new ApiResponse(
+      200,
+      req.user,
+      "Current user fetched successfully"
+    )
   );
 });
 
-export { registerUser, loginUser ,logoutUser};
+export { registerUser, loginUser, logoutUser ,getCurrentUser};
