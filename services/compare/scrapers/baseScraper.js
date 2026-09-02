@@ -98,10 +98,27 @@ export class BaseScraper {
 
       log(`${this.displayName}: fetching results`);
 
-      await this.#gotoWithRetry(page, url);
-      await this.#nudgeLazyContent(page);
+console.log(`[compare:${this.displayName}] goto start: ${url}`);
 
-      const raw = await this.extractProducts(page, query);
+await this.#gotoWithRetry(page, url);
+
+console.log(`[compare:${this.displayName}] goto completed`);
+
+console.log(`[compare:${this.displayName}] lazy content start`);
+
+await this.#nudgeLazyContent(page);
+
+console.log(`[compare:${this.displayName}] lazy content done`);
+
+console.log(`[compare:${this.displayName}] extraction start`);
+
+const raw = await this.extractProducts(page, query);
+
+console.log(
+  `[compare:${this.displayName}] extraction completed: ${
+    Array.isArray(raw) ? raw.length : 0
+  }`
+);
 
       const products = (Array.isArray(raw) ? raw : [])
         .filter((p) => p && p.title && p.productUrl)
