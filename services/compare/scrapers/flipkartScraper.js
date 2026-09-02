@@ -24,7 +24,7 @@ export class FlipkartScraper extends BaseScraper {
   }
 
   async extractProducts(page) {
-    await page.waitForSelector('div[data-id], a[href*="/p/"]', { timeout: 12_000 }).catch(() => {});
+    await page.waitForSelector('div[data-id], a[href*="/p/"]', { timeout: 5_000 }).catch(() => {});
     // The login pop-up overlays the grid on first load.
     await page.keyboard.press("Escape").catch(() => {});
     await page.waitForTimeout(400);

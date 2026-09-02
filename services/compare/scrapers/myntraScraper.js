@@ -19,7 +19,7 @@ export class MyntraScraper extends BaseScraper {
   }
 
   async extractProducts(page) {
-    await page.waitForSelector("li.product-base", { timeout: 12_000 }).catch(() => {});
+    await page.waitForSelector("li.product-base", { timeout: 5_000 }).catch(() => {});
 
     return page.$$eval("li.product-base", (items) => {
       const text = (root, sel) => {

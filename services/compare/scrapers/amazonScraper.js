@@ -23,7 +23,7 @@ export class AmazonScraper extends BaseScraper {
 
   async extractProducts(page) {
     await page
-      .waitForSelector('div[data-component-type="s-search-result"]', { timeout: 10_000 })
+      .waitForSelector('div[data-component-type="s-search-result"]', { timeout: 5_000 })
       .catch(() => {});
 
     return page.$$eval(

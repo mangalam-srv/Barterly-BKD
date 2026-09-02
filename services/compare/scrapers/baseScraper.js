@@ -33,7 +33,7 @@ export class BaseScraper {
   /** Domains this scraper is ever allowed to navigate to. */
   allowedHosts = [];
 
-  constructor({ maxResults = 12, navTimeoutMs = 15_000 } = {}) {
+  constructor({ maxResults = 12, navTimeoutMs = 8_000 } = {}) {
     this.maxResults = maxResults;
     this.navTimeoutMs = navTimeoutMs;
   }
