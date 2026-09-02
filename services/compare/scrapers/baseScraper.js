@@ -98,27 +98,27 @@ export class BaseScraper {
 
       log(`${this.displayName}: fetching results`);
 
-console.log(`[compare:${this.displayName}] goto start: ${url}`);
+      console.log(`[compare:${this.displayName}] goto start: ${url}`);
 
-await this.#gotoWithRetry(page, url);
+      await this.#gotoWithRetry(page, url);
 
-console.log(`[compare:${this.displayName}] goto completed`);
+      console.log(`[compare:${this.displayName}] goto completed`);
 
-console.log(`[compare:${this.displayName}] lazy content start`);
+      console.log(`[compare:${this.displayName}] lazy content start`);
 
-await this.#nudgeLazyContent(page);
+      await this.#nudgeLazyContent(page);
 
-console.log(`[compare:${this.displayName}] lazy content done`);
+      console.log(`[compare:${this.displayName}] lazy content done`);
 
-console.log(`[compare:${this.displayName}] extraction start`);
+      console.log(`[compare:${this.displayName}] extraction start`);
 
-const raw = await this.extractProducts(page, query);
+      const raw = await this.extractProducts(page, query);
 
-console.log(
-  `[compare:${this.displayName}] extraction completed: ${
-    Array.isArray(raw) ? raw.length : 0
-  }`
-);
+      console.log(
+        `[compare:${this.displayName}] extraction completed: ${
+          Array.isArray(raw) ? raw.length : 0
+        }`
+      );
 
       const products = (Array.isArray(raw) ? raw : [])
         .filter((p) => p && p.title && p.productUrl)
@@ -165,27 +165,31 @@ console.log(
   }
 
   async #gotoWithRetry(page, url) {
-    let lastErr;
+  try {
+    await page.goto(url, {
+      waitUntil: "commit",
+      timeout: this.navTimeoutMs,
+    });
 
-    // One navigation attempt only.
-    for (let attempt = 1; attempt <= 1; attempt += 1) {
-      try {
-        await page.goto(url, {
-          waitUntil: "domcontentloaded",
-          timeout: this.navTimeoutMs,
-        });
+    return;
+  } catch (err) {
+    // A navigation timeout does not necessarily mean the page is unusable.
+    // The browser may already have received enough of the document for
+    // extraction to work, so continue and let the platform scraper inspect it.
+    const message = err?.message || "";
 
-        return;
-      } catch (err) {
-        lastErr = err;
-        await page.waitForTimeout(500 * attempt);
-      }
+    if (
+      message.toLowerCase().includes("timeout") ||
+      message.toLowerCase().includes("timed out")
+    ) {
+      return;
     }
 
     throw new ScraperError(
       this.platform,
-      `Navigation failed: ${lastErr?.message}`,
-      lastErr
+      `Navigation failed: ${message}`,
+      err
     );
   }
+}
 }
