@@ -33,7 +33,7 @@ export class BaseScraper {
   /** Domains this scraper is ever allowed to navigate to. */
   allowedHosts = [];
 
-  constructor({ maxResults = 12, navTimeoutMs = 25_000 } = {}) {
+  constructor({ maxResults = 12, navTimeoutMs = 15_000 } = {}) {
     this.maxResults = maxResults;
     this.navTimeoutMs = navTimeoutMs;
   }
@@ -55,15 +55,23 @@ export class BaseScraper {
     } catch {
       throw new ScraperError(this.platform, `Invalid search URL: ${url}`);
     }
-    const ok = this.allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+
+    const ok = this.allowedHosts.some(
+      (h) => host === h || host.endsWith(`.${h}`)
+    );
+
     if (!ok) {
-      throw new ScraperError(this.platform, `Blocked navigation target: ${host}`);
+      throw new ScraperError(
+        this.platform,
+        `Blocked navigation target: ${host}`
+      );
     }
   }
 
   /**
-   * Run the scraper end-to-end for a query. Always resolves to
-   * `{ platform, products: rawProduct[] }` or throws a ScraperError.
+   * Run the scraper end-to-end for a query.
+   * Always resolves to `{ platform, products: rawProduct[] }`
+   * or throws a ScraperError.
    */
   async search(query, { logger } = {}) {
     const log = logger || (() => {});
@@ -72,55 +80,68 @@ export class BaseScraper {
 
     let context;
     let page;
+
     try {
       context = await acquireContext();
       page = await context.newPage();
 
-      // Block heavy resources we never need — keeps scrapes fast and light.
-      // NOTE: images are allowed through: several stores only swap the real
-      // product-image URL into the DOM once the <img> actually loads.
+      // Block heavy resources we never need.
       await page.route("**/*", (route) => {
         const type = route.request().resourceType();
-        if (["media", "font"].includes(type)) return route.abort();
+
+        if (["media", "font"].includes(type)) {
+          return route.abort();
+        }
+
         return route.continue();
       });
 
       log(`${this.displayName}: fetching results`);
+
       await this.#gotoWithRetry(page, url);
       await this.#nudgeLazyContent(page);
 
       const raw = await this.extractProducts(page, query);
+
       const products = (Array.isArray(raw) ? raw : [])
         .filter((p) => p && p.title && p.productUrl)
         .slice(0, this.maxResults);
 
       log(`${this.displayName}: ${products.length} raw results`);
-      return { platform: this.platform, products };
+
+      return {
+        platform: this.platform,
+        products,
+      };
     } catch (err) {
-      if (err instanceof ScraperError) throw err;
-      throw new ScraperError(this.platform, err?.message || "Scrape failed", err);
+      if (err instanceof ScraperError) {
+        throw err;
+      }
+
+      throw new ScraperError(
+        this.platform,
+        err?.message || "Scrape failed",
+        err
+      );
     } finally {
       try {
-        if (page) await page.close();
+        if (page) {
+          await page.close();
+        }
       } catch {
         /* ignore */
       }
+
       await releaseContext(context);
     }
   }
 
-  /** Scroll the page in steps so lazy-loaded cards / images get a chance to render. */
+  /**
+   * Give the page a short moment for initial/lazy content to render.
+   */
   async #nudgeLazyContent(page) {
     try {
-      await page.evaluate(async () => {
-        const step = Math.max(400, Math.floor(window.innerHeight * 0.8));
-        for (let y = 0; y < 4000; y += step) {
-          window.scrollTo(0, y);
-          await new Promise((r) => setTimeout(r, 250));
-        }
-        window.scrollTo(0, 0);
-      });
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(500);
     } catch {
       /* non-fatal — extraction can still proceed */
     }
@@ -128,15 +149,26 @@ export class BaseScraper {
 
   async #gotoWithRetry(page, url) {
     let lastErr;
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
+
+    // One navigation attempt only.
+    for (let attempt = 1; attempt <= 1; attempt += 1) {
       try {
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: this.navTimeoutMs });
+        await page.goto(url, {
+          waitUntil: "domcontentloaded",
+          timeout: this.navTimeoutMs,
+        });
+
         return;
       } catch (err) {
         lastErr = err;
         await page.waitForTimeout(500 * attempt);
       }
     }
-    throw new ScraperError(this.platform, `Navigation failed: ${lastErr?.message}`, lastErr);
+
+    throw new ScraperError(
+      this.platform,
+      `Navigation failed: ${lastErr?.message}`,
+      lastErr
+    );
   }
 }

@@ -23,7 +23,7 @@ import {
 } from "./matching.js";
 import { getCached, setCached } from "./cache.js";
 
-const PER_SCRAPER_BUDGET_MS = 30_000;
+const PER_SCRAPER_BUDGET_MS = 20_000;
 
 /** Map noisy low-level navigation errors to something a user can understand. */
 const friendlyError = (message = "") => {
