@@ -49,3 +49,5 @@ uploads/
 
 # Misc
 report.*.json
+# Temporary public assets
+public/temp/

@@ -35,7 +35,9 @@ Return only the improved listing description.
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      // Groq decommissioned `llama-3.3-70b-versatile`; `AI_MODEL` (shared with the
+      // Python advisor service) keeps both AI features on one supported model.
+      model: process.env.AI_MODEL || "openai/gpt-oss-120b",
       messages: [
         {
           role: "user",
