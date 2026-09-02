@@ -79,26 +79,40 @@ export const runComparison = async (rawQuery, { logger, useCache = true } = {}) 
   const intent = parseQueryIntent(query);
   const scrapers = createScrapers();
 
-  const settled = await Promise.allSettled(
-    scrapers.map((scraper) => {
-      const sourceStart = Date.now();
-      return withTimeout(
-        scraper.search(query, { logger: log }),
-        PER_SCRAPER_BUDGET_MS,
-        `${scraper.displayName} timed out`
-      )
-        .then((result) => ({ ...result, displayName: scraper.displayName, elapsedMs: Date.now() - sourceStart }))
-        .catch((err) => {
-          const message = err?.message || "Unknown scraper error";
-          return {
-            platform: scraper.platform,
-            displayName: scraper.displayName,
-            error: message,
-            elapsedMs: Date.now() - sourceStart,
-          };
-        });
-    })
-  );
+ const settled = [];
+
+for (const scraper of scrapers) {
+  const sourceStart = Date.now();
+
+  try {
+    const result = await withTimeout(
+      scraper.search(query, { logger: log }),
+      PER_SCRAPER_BUDGET_MS,
+      `${scraper.displayName} timed out`
+    );
+
+    settled.push({
+      status: "fulfilled",
+      value: {
+        ...result,
+        displayName: scraper.displayName,
+        elapsedMs: Date.now() - sourceStart,
+      },
+    });
+  } catch (err) {
+    const message = err?.message || "Unknown scraper error";
+
+    settled.push({
+      status: "fulfilled",
+      value: {
+        platform: scraper.platform,
+        displayName: scraper.displayName,
+        error: message,
+        elapsedMs: Date.now() - sourceStart,
+      },
+    });
+  }
+}
 
   const sources = [];
   let allProducts = [];
